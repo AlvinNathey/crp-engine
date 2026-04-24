@@ -707,7 +707,7 @@ export default function CRPEngine() {
             background:${T.surface};
             box-shadow:0 2px 16px rgba(0,0,0,0.15);
           }
-          .crp-main{padding-top:calc(56px + env(safe-area-inset-top,0px) + 16px)!important;padding-left:16px!important;padding-right:16px!important;padding-bottom:max(24px,env(safe-area-inset-bottom,0px))!important}
+          .crp-main{padding-top:calc(56px + env(safe-area-inset-top,0px) + 6px)!important;padding-left:16px!important;padding-right:16px!important;padding-bottom:max(24px,env(safe-area-inset-bottom,0px))!important}
           .crp-page-header{display:none!important}
           .sidebar{
             position:fixed!important;left:0;top:0;
@@ -727,9 +727,9 @@ export default function CRPEngine() {
             background:rgba(0,0,0,0.55);-webkit-tap-highlight-color:transparent;
           }
           .crp-toast{left:12px!important;right:12px!important;bottom:max(20px,env(safe-area-inset-bottom,0px))!important;width:auto!important}
-          --crp-card-pad:18px;
+          :root{--crp-card-pad:18px}
           button,.crp-btn{min-height:44px}
-          .crp-cfg-stickybg{top:56px!important;top:calc(56px + env(safe-area-inset-top,0px))!important}
+          .crp-cfg-stickybg{top:calc(56px + env(safe-area-inset-top,0px))!important;box-shadow:0 4px 16px rgba(0,0,0,0.32)!important;border-radius:0 0 10px 10px!important}
         }
         /* ── mobile (≤640px) ── */
         @media(max-width:640px){
@@ -1335,7 +1335,7 @@ export default function CRPEngine() {
           {activeTab==="configure" && (
             <div key="config" className="fade-in">
               {/* Sticky progress */}
-              <div className="crp-cfg-stickybg" style={{position:"sticky",top:0,zIndex:50,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",marginBottom:14}}>
+              <div className="crp-cfg-stickybg" style={{position:"sticky",top:0,zIndex:50,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",marginBottom:16}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:10}}>
                   <div style={{fontSize:12,color:T.textDim,fontFamily:T.sans}}>Configuration wizard</div>
                   <button type="button" onClick={()=>setConfirmDialog({id:"clearConfigure"})}
