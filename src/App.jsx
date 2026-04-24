@@ -337,7 +337,7 @@ function PartyForm({title,party,color,onChange}) {
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
         <span style={{background:`${color}22`,color,padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,letterSpacing:1,fontFamily:T.sans}}>{title.toUpperCase()}</span>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <div className="crp-party-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         {fields.map(f=>(
           <div key={f.k} style={{gridColumn:f.full?"1/-1":"auto"}}>
             <div style={{fontSize:10,fontWeight:600,letterSpacing:0.8,color:T.textDim,textTransform:"uppercase",marginBottom:5,fontFamily:T.sans}}>{f.label}</div>
@@ -397,6 +397,7 @@ export default function CRPEngine() {
   const [sortBy,setSortBy]           = useState("price");
   const [sortDir,setSortDir]         = useState("desc");
   const [confirmDialog,setConfirmDialog]=useState(null);
+  const [mobileNavOpen,setMobileNavOpen]=useState(false);
   const [colorMode,setColorMode]=useState(()=>{
     try{const s=localStorage.getItem("crp-color-mode");return s==="light"?"light":"dark";}catch{return"dark";}
   });
@@ -580,6 +581,20 @@ export default function CRPEngine() {
     try{localStorage.setItem("crp-color-mode",colorMode);}catch{}
   },[colorMode]);
 
+  useEffect(()=>{
+    const onResize=()=>{if(window.innerWidth>900)setMobileNavOpen(false);};
+    window.addEventListener("resize",onResize);
+    return ()=>window.removeEventListener("resize",onResize);
+  },[]);
+
+  useEffect(()=>{
+    if(!mobileNavOpen)return;
+    if(typeof window.matchMedia==="function"&&!window.matchMedia("(max-width:900px)").matches)return;
+    const prev=document.body.style.overflow;
+    document.body.style.overflow="hidden";
+    return ()=>{document.body.style.overflow=prev;};
+  },[mobileNavOpen]);
+
   // ─── NAV CONFIG ──────────────────────────────────────────────────────────────
   const navItems = [
     {id:"dashboard",label:"Dashboard",icon:"◉"},
@@ -601,14 +616,14 @@ export default function CRPEngine() {
   ];
 
   // ─── STYLE HELPERS ────────────────────────────────────────────────────────────
-  const card     = (extra={}) => ({background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:24,marginBottom:20,...extra});
-  const cardHL   = (color,extra={}) => ({background:T.surface,border:`1px solid ${color}44`,borderTop:`2px solid ${color}`,borderRadius:12,padding:24,marginBottom:20,...extra});
+  const card     = (extra={}) => ({background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:"var(--crp-card-pad,24px)",marginBottom:20,...extra});
+  const cardHL   = (color,extra={}) => ({background:T.surface,border:`1px solid ${color}44`,borderTop:`2px solid ${color}`,borderRadius:12,padding:"var(--crp-card-pad,24px)",marginBottom:20,...extra});
   const label    = {fontSize:10,fontWeight:700,letterSpacing:1.5,color:T.textDim,textTransform:"uppercase",marginBottom:8,fontFamily:T.sans};
   const bigNum   = (color=T.text) => ({fontSize:36,fontWeight:700,color,fontFamily:T.mono,lineHeight:1,letterSpacing:"-0.5px"});
   const section  = {fontSize:16,fontWeight:700,color:T.text,marginBottom:16,paddingBottom:10,borderBottom:`1px solid ${T.border}`,fontFamily:T.sans,letterSpacing:"-0.2px"};
-  const g2       = {display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:16,marginBottom:20};
-  const g3       = {display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:14,marginBottom:20};
-  const g4       = {display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:12,marginBottom:20};
+  const g2       = {display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,240px),1fr))",gap:16,marginBottom:20};
+  const g3       = {display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,220px),1fr))",gap:14,marginBottom:20};
+  const g4       = {display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(100%,180px),1fr))",gap:12,marginBottom:20};
 
   const sel = {
     background:T.surface2,border:`1px solid ${T.border}`,borderRadius:8,
@@ -671,12 +686,99 @@ export default function CRPEngine() {
         .sector-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.4)!important}
         .nav-btn:hover{background:${T.surface2}!important;border-color:${T.border2}!important}
         .nav-btn-active{background:${T.accentDim}!important;border-color:${T.accent}!important;color:${T.accent}!important}
-        @media(max-width:900px){.app-grid{grid-template-columns:1fr!important}.sidebar{display:none!important}}
+        button,a[role="button"]{touch-action:manipulation}
+        /* ── card padding via custom property ── */
+        :root{--crp-card-pad:24px}
+        /* ── prevent iOS auto-zoom on focus ── */
+        input,select,textarea{font-size:max(16px,1em)!important;}
+        /* ── mobile topbar / sidebar drawer ── */
+        .crp-mobile-topbar{display:none}
+        .crp-nav-backdrop{display:none}
+        .crp-page-header{display:flex}
+        /* ── tablet (≤900px) ── */
+        @media(max-width:900px){
+          .crp-app-grid{grid-template-columns:1fr!important}
+          .crp-mobile-topbar{
+            display:flex!important;align-items:center;gap:10px;
+            position:fixed;left:0;right:0;top:0;z-index:10002;
+            min-height:56px;padding:0 14px;
+            padding-top:env(safe-area-inset-top,0px);
+            border-bottom:1px solid ${T.border};
+            background:${T.surface};
+            box-shadow:0 2px 16px rgba(0,0,0,0.15);
+          }
+          .crp-main{padding-top:calc(56px + env(safe-area-inset-top,0px) + 16px)!important;padding-left:16px!important;padding-right:16px!important;padding-bottom:max(24px,env(safe-area-inset-bottom,0px))!important}
+          .crp-page-header{display:none!important}
+          .sidebar{
+            position:fixed!important;left:0;top:0;
+            width:min(300px,88vw)!important;max-width:320px;
+            height:100vh!important;height:100dvh!important;
+            z-index:10003!important;
+            transform:translate3d(-105%,0,0);
+            transition:transform 0.26s cubic-bezier(0.4,0,0.2,1);
+            display:flex!important;
+            box-shadow:8px 0 40px rgba(0,0,0,0.35);
+            padding-top:max(20px,env(safe-area-inset-top,0px))!important;
+          }
+          .sidebar.sidebar--open{transform:translate3d(0,0,0)}
+          .sidebar button{min-height:48px!important}
+          .crp-nav-backdrop.crp-nav-backdrop--show{
+            display:block!important;position:fixed;inset:0;z-index:10001;
+            background:rgba(0,0,0,0.55);-webkit-tap-highlight-color:transparent;
+          }
+          .crp-toast{left:12px!important;right:12px!important;bottom:max(20px,env(safe-area-inset-bottom,0px))!important;width:auto!important}
+          --crp-card-pad:18px;
+          button,.crp-btn{min-height:44px}
+          .crp-cfg-stickybg{top:56px!important;top:calc(56px + env(safe-area-inset-top,0px))!important}
+        }
+        /* ── mobile (≤640px) ── */
+        @media(max-width:640px){
+          :root{--crp-card-pad:14px}
+          .crp-g2,.crp-g3,.crp-g4{grid-template-columns:1fr!important;gap:12px!important}
+          .crp-party-grid{grid-template-columns:1fr!important}
+          .crp-text-2col{grid-template-columns:1fr!important}
+          .crp-grid-4{grid-template-columns:1fr!important}
+          .crp-grid-3{grid-template-columns:1fr!important}
+          .crp-bell-grid{grid-template-columns:1fr!important}
+          .crp-config-date-grid{grid-template-columns:1fr!important}
+          .crp-welcome-steps{grid-template-columns:1fr!important}
+          .crp-sector-tiles{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}
+          .crp-analyze-metrics{flex-wrap:wrap!important;width:100%!important;justify-content:flex-start!important;gap:12px!important}
+          .crp-progress-summary{grid-template-columns:1fr 1fr!important}
+          .crp-report-uf-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+          .crp-card{padding:14px!important}
+          .crp-wt-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+          .crp-step-nav{flex-direction:column!important;gap:10px!important}
+          .crp-step-nav button{width:100%!important;justify-content:center!important}
+          .crp-prev-next{flex-direction:row!important}
+          .crp-prev-next button{flex:1!important;justify-content:center!important}
+          .crp-track-form{flex-direction:column!important}
+          .crp-track-form>div{width:100%!important}
+          .crp-track-form>button{width:100%!important;justify-content:center!important}
+          .crp-cpi-tabs{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:4px!important}
+          .crp-cpi-tabs button{text-align:center!important;padding:7px 4px!important;font-size:11px!important}
+          .crp-rank-col-hide{display:none!important}
+          .crp-welcome-banner{flex-direction:column!important;gap:12px!important}
+          .crp-welcome-banner>div:first-child{display:none}
+        }
+        /* ── tablet only (641–900) ── */
+        @media(max-width:900px) and (min-width:641px){
+          .crp-grid-4{grid-template-columns:repeat(2,1fr)!important}
+          .crp-wt-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+          .crp-cpi-tabs{flex-wrap:wrap!important}
+        }
+        /* ── step pills: horizontal scroll on narrow ── */
+        .crp-step-pills{display:flex;gap:5px;flex-wrap:wrap}
+        @media(max-width:700px){
+          .crp-step-pills{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;gap:6px;scrollbar-width:thin}
+          .crp-step-pills>button{flex:0 0 auto}
+        }
+        .crp-table-scroll{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
       `}</style>
 
       {/* Toast */}
       {toast && (
-        <div style={{position:"fixed",bottom:24,right:24,background:T.surface2,border:`1px solid ${T.green}`,borderRadius:10,color:T.green,padding:"10px 16px",zIndex:9999,fontSize:13,fontFamily:T.sans,display:"flex",alignItems:"center",gap:8,boxShadow:`0 8px 24px ${T.bg}`}}>
+        <div className="crp-toast" style={{position:"fixed",bottom:24,right:24,background:T.surface2,border:`1px solid ${T.green}`,borderRadius:10,color:T.green,padding:"10px 16px",zIndex:9999,fontSize:13,fontFamily:T.sans,display:"flex",alignItems:"center",gap:8,boxShadow:`0 8px 24px ${T.bg}`}}>
           <span>✓</span> {toast}
         </div>
       )}
@@ -691,7 +793,7 @@ export default function CRPEngine() {
             aria-modal="true"
             aria-labelledby="crp-confirm-title"
             aria-describedby="crp-confirm-desc"
-            style={{position:"fixed",inset:0,zIndex:10000,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}
+            style={{position:"fixed",inset:0,zIndex:10060,background:"rgba(0,0,0,0.75)",backdropFilter:"blur(4px)",WebkitBackdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}}
             onClick={e=>{if(e.target===e.currentTarget)setConfirmDialog(null);}}
           >
             <div
@@ -734,10 +836,36 @@ export default function CRPEngine() {
         );
       })()}
 
-      <div className="app-grid" style={{maxWidth:1440,margin:"0 auto",display:"grid",gridTemplateColumns:"220px 1fr",minHeight:"100vh"}}>
+      {mobileNavOpen && (
+        <div className="crp-nav-backdrop crp-nav-backdrop--show" onClick={()=>setMobileNavOpen(false)} aria-hidden="true"/>
+      )}
+
+      <div
+        className="crp-mobile-topbar"
+        style={{background:T.surface,color:T.text,fontFamily:T.sans}}
+      >
+        <button
+          type="button"
+          className="nav-btn"
+          aria-expanded={mobileNavOpen}
+          aria-controls="crp-sidebar-nav"
+          onClick={()=>setMobileNavOpen(o=>!o)}
+          style={{...btn(false),minWidth:48,minHeight:48,padding:0,fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",borderRadius:10}}
+        >
+          {mobileNavOpen?"✕":"☰"}
+        </button>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:11,fontWeight:800,color:T.accent,letterSpacing:0.3}}>CRP Engine</div>
+          <div style={{fontSize:12,color:T.textMid,fontWeight:600,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+            {navItems.find(i=>i.id===activeTab)?.label ?? "Menu"}
+          </div>
+        </div>
+      </div>
+
+      <div className="app-grid crp-app-grid" style={{maxWidth:1440,margin:"0 auto",display:"grid",gridTemplateColumns:"220px 1fr",minHeight:"100vh"}}>
 
         {/* ═══ SIDEBAR ═══ */}
-        <aside className="sidebar" style={{background:T.surface,borderRight:`1px solid ${T.border}`,padding:"20px 14px",position:"sticky",top:0,height:"100vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:0}}>
+        <aside id="crp-sidebar-nav" className={`sidebar ${mobileNavOpen?"sidebar--open":""}`} style={{background:T.surface,borderRight:`1px solid ${T.border}`,padding:"20px 14px",position:"sticky",top:0,height:"100vh",overflowY:"auto",display:"flex",flexDirection:"column",gap:0}}>
           {/* Brand */}
           <div style={{marginBottom:24,padding:"0 2px"}}>
             <div style={{fontSize:18,fontWeight:800,color:T.accent,letterSpacing:"-0.3px",fontFamily:T.sans}}>CRP Engine</div>
@@ -769,7 +897,8 @@ export default function CRPEngine() {
                 item.id==="track"     && trackResult ? "●" : null;
               return (
                 <button key={item.id}
-                  onClick={()=>setActiveTab(item.id)}
+                  type="button"
+                  onClick={()=>{setActiveTab(item.id);setMobileNavOpen(false);}}
                   className={isActive?"nav-btn nav-btn-active":"nav-btn"}
                   style={{
                     background: isActive ? T.accentDim : "transparent",
@@ -811,23 +940,23 @@ export default function CRPEngine() {
         </aside>
 
         {/* ═══ MAIN ═══ */}
-        <main style={{padding:24,overflowY:"auto"}}>
+        <main className="crp-main" style={{padding:24,overflowY:"auto"}}>
 
           {/* Header */}
-          <div style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:"14px 20px",marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div className="crp-page-header" style={{background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:"12px 20px",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
             <div>
               <div style={{fontSize:11,color:T.textDim,fontFamily:T.mono,letterSpacing:1,textTransform:"uppercase",marginBottom:4}}>
                 {["dashboard","configure","analyze","track","reports"].includes(activeTab)
                   ? `CRP Engine / ${activeTab.charAt(0).toUpperCase()+activeTab.slice(1)}`
                   : "CRP Engine"}
               </div>
-              <div style={{fontSize:18,fontWeight:800,color:T.text,letterSpacing:"-0.2px",fontFamily:T.sans,lineHeight:1.2}}>
+              <div style={{fontSize:18,fontWeight:800,color:T.text,letterSpacing:"-0.2px",fontFamily:T.sans,lineHeight:1.2,display:"flex",flexWrap:"wrap",alignItems:"baseline",gap:"6px 10px"}}>
                 {activeTab==="dashboard"?"Economy-Wide Risk Overview"
                  :activeTab==="configure"?"Configure Contract"
                  :activeTab==="analyze"?"Sector Deep-Dive"
                  :activeTab==="track"?"Contract Monitoring"
                  :"Reports & Indices"}
-                {activeTab==="analyze"&&activeSec && <span style={{fontSize:14,fontWeight:500,color:T.textMid,marginLeft:10}}>{SECTORS[activeSec].icon} {SECTORS[activeSec].label}</span>}
+                {activeTab==="analyze"&&activeSec && <span style={{fontSize:14,fontWeight:500,color:T.textMid}}>{SECTORS[activeSec].icon} {SECTORS[activeSec].label}</span>}
               </div>
               <div style={{fontSize:11,color:T.textDim,fontFamily:T.mono,marginTop:3}}>KNBS · EPRA · CBK · KEBS · KEMSA — Real Market Prices</div>
             </div>
@@ -852,7 +981,7 @@ export default function CRPEngine() {
           {activeTab==="dashboard" && (
             <div key={animKey} className="fade-in">
               {!cfgPrimary && (
-                <div style={{background:`${T.accent}08`,border:`1px solid ${T.accent}33`,borderRadius:12,padding:"20px 24px",marginBottom:20,display:"flex",gap:20,alignItems:"flex-start",flexWrap:"wrap"}}>
+                <div className="crp-welcome-banner" style={{background:`${T.accent}08`,border:`1px solid ${T.accent}33`,borderRadius:12,padding:"20px 24px",marginBottom:20,display:"flex",gap:20,alignItems:"flex-start",flexWrap:"wrap"}}>
                   <div style={{fontSize:32}}>📋</div>
                   <div style={{flex:1,minWidth:220}}>
                     <div style={{fontSize:16,fontWeight:700,color:T.accent,fontFamily:T.sans,marginBottom:6}}>Welcome to CRP Engine</div>
@@ -863,7 +992,7 @@ export default function CRPEngine() {
                       → Start Configuring
                     </button>
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,minWidth:220}}>
+                  <div className="crp-welcome-steps" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,minWidth:220}}>
                     {[{step:"1",label:"Configure",desc:"Set sector, duration, value",icon:"◈",color:T.accent},{step:"2",label:"Analyse",desc:"Review risk metrics & charts",icon:"◫",color:T.purple},{step:"3",label:"Generate",desc:"Issue reference code",icon:"◉",color:T.green}].map(s=>(
                       <div key={s.step} style={{background:T.surface2,borderRadius:8,padding:"10px 12px",border:`1px solid ${T.border}`}}>
                         <div style={{fontSize:11,color:s.color,fontWeight:700,marginBottom:3,fontFamily:T.sans}}>{s.icon} {s.label}</div>
@@ -889,7 +1018,7 @@ export default function CRPEngine() {
                   <span>Economy-Wide CRP — {Object.keys(SECTORS).length} Sectors</span>
                   <span style={{fontSize:11,color:T.textDim,fontFamily:T.mono,fontWeight:400}}>Click to deep-dive →</span>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10}}>
+                <div className="crp-sector-tiles" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:10}}>
                   {filteredSectorEntries.map(([sid,s])=>{
                     const r=sectorResults[sid],t=r?r.crp.total:0;
                     const col=crpColor(t);
@@ -918,7 +1047,7 @@ export default function CRPEngine() {
               </div>
 
               {/* Summary Cards */}
-              <div style={g4}>
+              <div className="crp-g4" style={g4}>
                 {[
                   (()=>{const e=Object.entries(sectorResults).sort((a,b)=>b[1].crp.total-a[1].crp.total)[0];return e?{lbl:"Highest CRP",val:`${e[1].crp.total}%`,sub:`${SECTORS[e[0]].icon} ${SECTORS[e[0]].label}`,color:T.red}:null;})(),
                   (()=>{const e=Object.entries(sectorResults).sort((a,b)=>a[1].crp.total-b[1].crp.total)[0];return e?{lbl:"Lowest CRP",val:`${e[1].crp.total}%`,sub:`${SECTORS[e[0]].icon} ${SECTORS[e[0]].label}`,color:T.green}:null;})(),
@@ -939,12 +1068,12 @@ export default function CRPEngine() {
                   <span>Sector Ranking — Risk-Return Overview</span>
                   <span style={{fontSize:11,color:T.textDim,fontFamily:T.mono,fontWeight:400}}>Click row to analyse</span>
                 </div>
-                <div style={{overflowX:"auto"}}>
+                <div className="crp-table-scroll" style={{overflowX:"auto"}}>
                 <table style={{width:"100%",borderCollapse:"collapse",minWidth:580}}>
                   <thead>
                     <tr style={{background:T.bg,borderBottom:`2px solid ${T.border}`}}>
-                      {["#","Sector","Vol %","CPI %","Sharpe","Risk","CRP %"].map(h=>(
-                        <th key={h} style={{padding:"10px 12px",textAlign:h==="#"?"center":h.includes("%")||h==="Sharpe"?"right":"left",fontSize:11,fontWeight:700,color:T.textDim,textTransform:"uppercase",letterSpacing:0.8,fontFamily:T.sans,whiteSpace:"nowrap"}}>{h}</th>
+                      {[["#",false],["Sector",false],["Vol %",true],["CPI %",false],["Sharpe",true],["Risk",false],["CRP %",false]].map(([h,hide])=>(
+                        <th key={h} className={hide?"crp-rank-col-hide":""} style={{padding:"10px 12px",textAlign:h==="#"?"center":h.includes("%")||h==="Sharpe"?"right":"left",fontSize:11,fontWeight:700,color:T.textDim,textTransform:"uppercase",letterSpacing:0.8,fontFamily:T.sans,whiteSpace:"nowrap"}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -976,9 +1105,9 @@ export default function CRPEngine() {
                               </div>
                             </div>
                           </td>
-                          <td style={{padding:"11px 12px",fontSize:13,color:T.purple,fontFamily:T.mono,textAlign:"right"}}>{r.crp.vol}%</td>
+                          <td className="crp-rank-col-hide" style={{padding:"11px 12px",fontSize:13,color:T.purple,fontFamily:T.mono,textAlign:"right"}}>{r.crp.vol}%</td>
                           <td style={{padding:"11px 12px",fontSize:13,color:T.amber,fontFamily:T.mono,textAlign:"right"}}>{r.crp.infl}%</td>
-                          <td style={{padding:"11px 12px",fontSize:13,color:scol,fontWeight:700,fontFamily:T.mono,textAlign:"right"}}>{sc.toFixed(2)}</td>
+                          <td className="crp-rank-col-hide" style={{padding:"11px 12px",fontSize:13,color:scol,fontWeight:700,fontFamily:T.mono,textAlign:"right"}}>{sc.toFixed(2)}</td>
                           <td style={{padding:"11px 12px"}}>
                             <div style={{width:72}}>
                               <Bar value={r.crp.total} max={Math.max(...Object.values(sectorResults).map(x=>x.crp.total))||20} color={col} h={6}/>
@@ -1000,7 +1129,7 @@ export default function CRPEngine() {
           {/* ═══ ANALYZE ═══ */}
           {activeTab==="analyze" && (
             <div key={(activeSec||"none")+animKey} className="fade-in">
-              <div style={g2}>
+              <div className="crp-g2" style={g2}>
                 <div>
                   <div style={label}>Select Industry Sector</div>
                   <select style={sel} value={activeSec||""} onChange={e=>setActiveSec(e.target.value||null)}>
@@ -1046,11 +1175,11 @@ export default function CRPEngine() {
               {activeSec && (
                 <div style={{background:`${T.purple}08`,border:`1px solid ${T.purple}33`,borderRadius:10,padding:16,marginBottom:20}}>
                   <div style={{fontSize:10,fontWeight:700,color:T.purple,letterSpacing:1.5,textTransform:"uppercase",marginBottom:10,fontFamily:T.sans}}>📐 Lookback ↔ Contract Duration Alignment</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,fontSize:12,color:T.textMid,lineHeight:1.7}}>
+                  <div className="crp-text-2col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,fontSize:12,color:T.textMid,lineHeight:1.7}}>
                     <div><strong style={{color:T.text}}>What lookback does:</strong> Defines historical price window used to compute volatility (σ), EWMA, and Sharpe ratio. Short lookbacks react to recent shocks; longer windows capture seasonal cycles.</div>
                     <div><strong style={{color:T.text}}>Why it must match contract length:</strong> You are pricing risk over a comparable future horizon. A 30-day lookback for a 2-year contract systematically understates long-run volatility.</div>
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginTop:12}}>
+                  <div className="crp-grid-4" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginTop:12}}>
                     {[{dur:"Spot 1–30d",lb:"30d",col:T.green},{dur:"Short 1–6mo",lb:"60–90d",col:T.accent},{dur:"Medium 6–24mo",lb:"90–180d",col:T.amber},{dur:"Long 24mo+",lb:"180–365d",col:T.red}].map(({dur,lb,col})=>(
                       <div key={dur} style={{background:`${col}0c`,border:`1px solid ${col}33`,borderRadius:7,padding:10}}>
                         <div style={{color:col,fontWeight:700,fontSize:11,marginBottom:2,fontFamily:T.sans}}>{dur}</div>
@@ -1082,7 +1211,7 @@ export default function CRPEngine() {
                           {secTabSec.authority} · KNBS:{secTabSec.inflationKey} · CPI <span style={{color:T.amber}}>{secTabRes.cpi.toFixed(1)}%</span> · Lookback <span style={{color:T.purple}}>{secTabEffLb}d</span>
                         </div>
                       </div>
-                      <div style={{display:"flex",gap:20}}>
+                      <div className="crp-analyze-metrics" style={{display:"flex",gap:20}}>
                         {[
                           {lbl:"CRP Total",val:`${secTabRes.crp.total}%`,color:crpColor(secTabRes.crp.total)},
                           {lbl:"Vol Premium",val:`${secTabRes.crp.vol}%`,color:T.purple},
@@ -1105,7 +1234,7 @@ export default function CRPEngine() {
                   </div>
 
                   {/* Sharpe + Bell */}
-                  <div style={g2}>
+                  <div className="crp-g2" style={g2}>
                     <div style={card({marginBottom:0})}>
                       <div style={section}>Market Efficiency · Sharpe Ratio</div>
                       <SharpeGauge value={secTabRes.sectSharpe} baseline={secTabSec.sharpeBase}/>
@@ -1117,7 +1246,7 @@ export default function CRPEngine() {
                     <div style={card({marginBottom:0})}>
                       <div style={section}>Return Distribution · n={secTabRes.allR.length}</div>
                       <BellCurve returns={secTabRes.allR} color={secTabSec.color}/>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:10}}>
+                      <div className="crp-grid-3" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginTop:10}}>
                         {[["Observations",secTabRes.allR.length,T.text],["Mean return",secTabRes.allR.length>0?((secTabRes.allR.reduce((a,b)=>a+b,0)/secTabRes.allR.length)*100).toFixed(3)+"%":0,secTabSec.color],["Lookback",`${secTabEffLb}d`,T.purple]].map(([l,v,c])=>(
                           <div key={l}><div style={{fontSize:10,color:T.textDim,fontFamily:T.sans}}>{l}</div><div style={{fontSize:13,fontWeight:700,color:c,fontFamily:T.mono}}>{v}</div></div>
                         ))}
@@ -1128,7 +1257,7 @@ export default function CRPEngine() {
                   {/* Commodity Table */}
                   <div style={card()}>
                     <div style={section}>Live Kenya Market Prices · {secTabEffLb}d · Official Sources</div>
-                    <div style={{overflowX:"auto"}}>
+                    <div className="crp-table-scroll" style={{overflowX:"auto"}}>
                       <table style={{width:"100%",borderCollapse:"collapse",minWidth:700}}>
                         <thead>
                           <tr style={{borderBottom:`1px solid ${T.border}`}}>
@@ -1181,7 +1310,7 @@ export default function CRPEngine() {
                   {/* Per-commodity bells */}
                   <div style={card()}>
                     <div style={section}>Individual Return Distributions · All Inputs</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <div className="crp-bell-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                       {Object.entries(secTabRes.cr).map(([cid,data])=>(
                         <div key={cid} style={{background:T.bg,borderRadius:8,padding:14,border:`1px solid ${T.border}`}}>
                           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -1206,7 +1335,7 @@ export default function CRPEngine() {
           {activeTab==="configure" && (
             <div key="config" className="fade-in">
               {/* Sticky progress */}
-              <div style={{position:"sticky",top:0,zIndex:50,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 16px",marginBottom:20}}>
+              <div className="crp-cfg-stickybg" style={{position:"sticky",top:0,zIndex:50,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",marginBottom:14}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:10}}>
                   <div style={{fontSize:12,color:T.textDim,fontFamily:T.sans}}>Configuration wizard</div>
                   <button type="button" onClick={()=>setConfirmDialog({id:"clearConfigure"})}
@@ -1214,7 +1343,7 @@ export default function CRPEngine() {
                     Clear all fields
                   </button>
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:10}}>
+                <div className="crp-progress-summary" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:10}}>
                   {[["Sector",cfgPrimary?SECTORS[cfgPrimary].label:"—",!!cfgPrimary],["Duration",`${Math.round(contractDays)}d`,true],["Value",contractVal?`KES ${fmt(contractVal)}`:"—",!!contractVal],["CRP",activeCRP?`${activeCRP.total.toFixed(2)}%`:"—",!!activeCRP]].map(([k,v,done])=>(
                     <div key={k} style={{display:"flex",alignItems:"center",gap:6}}>
                       <span style={{width:7,height:7,borderRadius:"50%",background:done?T.green:T.border,display:"block",flexShrink:0}}/>
@@ -1224,7 +1353,7 @@ export default function CRPEngine() {
                   ))}
                 </div>
                 {/* Step pills */}
-                <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                <div className="crp-step-pills">
                   {stepMeta.map(st=>{
                     const isActive=configStep===st.n;
                     const isDone=st.done();
@@ -1258,7 +1387,7 @@ export default function CRPEngine() {
                   <div style={{...alertBox("g"),marginBottom:16}}>
                     <strong>⚖ Obligee (Client)</strong> commissions and pays for services. <strong>Obligor (Supplier)</strong> provides goods/services and bears input cost inflation risk.
                   </div>
-                  <div style={g2}>
+                  <div className="crp-g2" style={g2}>
                     <PartyForm title="Obligee (Client)" party={obligee} color={T.green} onChange={(k,v)=>setObligee(p=>({...p,[k]:v}))}/>
                     <PartyForm title="Obligor (Supplier)" party={obligor} color={T.amber} onChange={(k,v)=>setObligor(p=>({...p,[k]:v}))}/>
                   </div>
@@ -1270,7 +1399,7 @@ export default function CRPEngine() {
                 <div style={cardHL(T.accent)}>
                   <div style={section}>Step 2 · Industry Sector</div>
                   {!cfgPrimary && <div style={alertBox("b")}>Select a primary sector. All CRP calculations are industry-specific.</div>}
-                  <div style={g2}>
+                  <div className="crp-g2" style={g2}>
                     <div>
                       <div style={label}>Primary Sector</div>
                       <select style={sel} value={cfgPrimary||""} onChange={e=>{setCfgPrimary(e.target.value||null);setActiveSec(e.target.value||null);}}>
@@ -1330,7 +1459,7 @@ export default function CRPEngine() {
                     ))}
                   </div>
                   {durMode==="preset" && (
-                    <div style={g2}>
+                    <div className="crp-g2" style={g2}>
                       <div>
                         <div style={label}>Preset Duration</div>
                         <select style={sel} value={presetMo} onChange={e=>setPresetMo(Number(e.target.value))}>
@@ -1345,7 +1474,7 @@ export default function CRPEngine() {
                     </div>
                   )}
                   {durMode==="manual" && (
-                    <div style={g2}>
+                    <div className="crp-g2" style={g2}>
                       <div>
                         <div style={label}>Days</div>
                         <input type="number" min={1} max={3650} value={manDaysIn}
@@ -1361,8 +1490,8 @@ export default function CRPEngine() {
                     </div>
                   )}
                   {durMode==="dates" && (
-                    <div style={g2}>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                    <div className="crp-g2" style={g2}>
+                      <div className="crp-config-date-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
                         <div>
                           <div style={label}>Commencement</div>
                           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} style={{...inp,width:"100%"}}/>
@@ -1409,7 +1538,7 @@ export default function CRPEngine() {
                     </div>
                   )}
                   {lbMode==="manual" && (
-                    <div style={g2}>
+                    <div className="crp-g2" style={g2}>
                       <div>
                         <div style={label}>Manual Lookback</div>
                         <input type="number" min={14} max={730} value={manLb} onChange={e=>setManLb(Math.max(14,Number(e.target.value)))}
@@ -1439,7 +1568,7 @@ export default function CRPEngine() {
                     ⚖ This is the base BoQ value agreed before CRP adjustment. Do not commit until the CRP-adjusted total (Step 7) is reviewed by both parties.
                   </div>
                   {!cfgPrimary && <div style={alertBox("w")}>⚠ Select a sector in Step 2 first.</div>}
-                  <div style={g2}>
+                  <div className="crp-g2" style={g2}>
                     <div>
                       <div style={label}>Base Contract Amount (KES)</div>
                       <input type="text" placeholder="e.g. 15000000"
@@ -1475,7 +1604,7 @@ export default function CRPEngine() {
                   <div style={{...alertBox("g"),marginBottom:16}}>
                     ⚖ Market Price transfers full risk to Obligee. KES-UF protects Obligor. CRP Adjusted is the equitable recommendation.
                   </div>
-                  <div style={{overflowX:"auto"}}>
+                  <div className="crp-table-scroll" style={{overflowX:"auto"}}>
                     <table style={{width:"100%",borderCollapse:"collapse",minWidth:700}}>
                       <thead>
                         <tr style={{borderBottom:`1px solid ${T.border}`}}>
@@ -1521,7 +1650,7 @@ export default function CRPEngine() {
                   </div>
 
                   {/* Factor Cards */}
-                  <div style={g2}>
+                  <div className="crp-g2" style={g2}>
                     {ratio.factors.map((f,i)=>(
                       <div key={i} style={{background:T.bg,borderRadius:8,padding:14,border:`1px solid ${f.side==="obligor"?`${T.red}33`:f.side==="obligee"?`${T.accent}33`:T.border}`}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
@@ -1561,7 +1690,7 @@ export default function CRPEngine() {
                   </div>
 
                   {/* Payment grid */}
-                  <div style={g3}>
+                  <div className="crp-g3" style={g3}>
                     {[
                       {tag:"BASE",label:"Base Contract",val:`KES ${fmt(ratio.basePay)}`,desc:"Agreed BoQ",color:T.textDim},
                       {tag:"MARKET RISK",label:"Market-Priced",val:`KES ${fmt(ratio.mktPay)}`,desc:`+Full CRP ${crpPct.toFixed(1)}%`,color:T.red},
@@ -1591,7 +1720,7 @@ export default function CRPEngine() {
                   <div style={alertBox("b")}>
                     ℹ Generated once all fields are complete. Cite this code in all correspondence, invoices, and contract documents. Use <strong>Track</strong> to monitor the contract.
                   </div>
-                  <div style={g4}>
+                  <div className="crp-g4" style={g4}>
                     {[
                       {label:"Industry Sector",done:!!cfgPrimary,val:cfgPrimary?SECTORS[cfgPrimary].label:"—"},
                       {label:"Contract Value",done:!!contractVal,val:contractVal?`KES ${fmt(contractVal)}`:"—"},
@@ -1635,9 +1764,9 @@ export default function CRPEngine() {
                         <div style={section}>{SECTORS[cfgPrimary].icon} Commodity Weights</div>
                         <div style={{fontSize:11,color:totalW===100?T.green:T.red,fontFamily:T.mono,fontWeight:700}}>Total: {totalW}% {totalW!==100?"⚠":"✓"}</div>
                       </div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+                      <div className="crp-wt-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))",gap:10}}>
                         {Object.entries(SECTORS[cfgPrimary].commodities).map(([cid,comm])=>(
-                          <div key={cid} style={{minWidth:110,background:T.bg,borderRadius:8,padding:12,border:`1px solid ${T.border}`}}>
+                          <div key={cid} style={{background:T.bg,borderRadius:8,padding:12,border:`1px solid ${T.border}`}}>
                             <div style={{fontSize:10,color:comm.color,fontWeight:700,marginBottom:6,fontFamily:T.sans}}>{comm.label}</div>
                             <input type="number" min={0} max={100} value={sWeights[cid]||0}
                               onChange={e=>setCustomWts(prev=>({...prev,[cfgPrimary]:{...prev[cfgPrimary],[cid]:Number(e.target.value)}}))}
@@ -1657,14 +1786,14 @@ export default function CRPEngine() {
               )}
 
               {/* Step nav */}
-              <div style={{display:"flex",gap:10,marginTop:8,flexWrap:"wrap"}}>
+              <div className="crp-step-nav" style={{display:"flex",gap:10,marginTop:8,flexWrap:"wrap"}}>
                 <button style={btn(false)} onClick={runEngine}>↺ Recompute</button>
                 <button type="button" style={{...btn(false),fontSize:13}} onClick={()=>setConfirmDialog({id:"resetWeights"})}>↺ Reset Weights</button>
                 {cfgPrimary && <button style={{...btn(true,T.green),fontSize:13}} onClick={()=>{setActiveSec(cfgPrimary);setActiveTab("analyze");}}>→ Analyse Sector</button>}
               </div>
-              <div style={{display:"flex",justifyContent:"space-between",marginTop:20}}>
-                <button style={btn(configStep>1)} onClick={()=>setConfigStep(s=>Math.max(1,s-1))} disabled={configStep===1}>← Previous</button>
-                <button style={btn(configStep<8,T.accent)} onClick={()=>setConfigStep(s=>Math.min(8,s+1))} disabled={configStep===8}>Next →</button>
+              <div className="crp-prev-next" style={{display:"flex",justifyContent:"space-between",marginTop:20,gap:10}}>
+                <button style={{...btn(configStep>1),flex:"0 0 auto",minWidth:120}} onClick={()=>setConfigStep(s=>Math.max(1,s-1))} disabled={configStep===1}>← Previous</button>
+                <button style={{...btn(configStep<8,T.accent),flex:"0 0 auto",minWidth:120}} onClick={()=>setConfigStep(s=>Math.min(8,s+1))} disabled={configStep===8}>Next →</button>
               </div>
             </div>
           )}
@@ -1672,17 +1801,17 @@ export default function CRPEngine() {
           {/* ═══ REPORTS ═══ */}
           {activeTab==="reports" && (
             <div className="fade-in">
-              <div style={{display:"flex",gap:8,marginBottom:20}}>
-                <button style={tBtn(reportsTab==="inflation",T.accent)} onClick={()=>setReportsTab("inflation")}>CPI Report</button>
-                <button style={tBtn(reportsTab==="uf",T.accent)} onClick={()=>setReportsTab("uf")}>KES-UF Report</button>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:20,maxWidth:320}}>
+                <button style={{...tBtn(reportsTab==="inflation",T.accent),justifyContent:"center"}} onClick={()=>setReportsTab("inflation")}>CPI Report</button>
+                <button style={{...tBtn(reportsTab==="uf",T.accent),justifyContent:"center"}} onClick={()=>setReportsTab("uf")}>KES-UF Report</button>
               </div>
 
               {reportsTab==="inflation" && (
                 <div>
                   <div style={section}>KNBS CPI — All Sub-Indices · Kenya National Bureau of Statistics</div>
-                  <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+                  <div className="crp-cpi-tabs" style={{display:"flex",gap:5,marginBottom:16,flexWrap:"wrap",overflowX:"auto",WebkitOverflowScrolling:"touch",paddingBottom:2}}>
                     {["overall","construction","health","food","transport","housing","energy","manufacturing","services","education","utilities"].map(k=>(
-                      <button key={k} onClick={()=>setInflView(k)} style={{...tBtn(inflView===k,T.accent),padding:"5px 12px",fontSize:11}}>{k.charAt(0).toUpperCase()+k.slice(1)}</button>
+                      <button key={k} onClick={()=>setInflView(k)} style={{...tBtn(inflView===k,T.accent),padding:"6px 12px",fontSize:11,flexShrink:0}}>{k.charAt(0).toUpperCase()+k.slice(1)}</button>
                     ))}
                   </div>
                   <div style={card()}>
@@ -1705,11 +1834,12 @@ export default function CRPEngine() {
                   </div>
                   <div style={card()}>
                     <div style={section}>Cross-Sector CPI Summary</div>
-                    <table style={{width:"100%",borderCollapse:"collapse"}}>
+                    <div className="crp-table-scroll" style={{overflowX:"auto"}}>
+                    <table style={{width:"100%",borderCollapse:"collapse",minWidth:480}}>
                       <thead>
                         <tr style={{borderBottom:`1px solid ${T.border}`}}>
-                          {["Index","Latest","3mo Avg","6mo Avg","Trend",`CRP Impact (${Math.round(contractMonths)}mo)`].map(h=>(
-                            <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:T.textDim,textTransform:"uppercase",letterSpacing:1,fontFamily:T.sans,whiteSpace:"nowrap"}}>{h}</th>
+                          {[["Index",false],["Latest",false],["3mo Avg",true],["6mo Avg",true],["Trend",false],[`CRP Impact (${Math.round(contractMonths)}mo)`,false]].map(([h,hide])=>(
+                            <th key={h} className={hide?"crp-rank-col-hide":""} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:T.textDim,textTransform:"uppercase",letterSpacing:1,fontFamily:T.sans,whiteSpace:"nowrap"}}>{h}</th>
                           ))}
                         </tr>
                       </thead>
@@ -1725,8 +1855,8 @@ export default function CRPEngine() {
                             <tr key={key} style={{borderBottom:`1px solid ${T.bg}`,background:i%2?T.surface2:"transparent"}}>
                               <td style={{padding:"8px 10px",color:T.text,fontWeight:600,textTransform:"capitalize",fontFamily:T.sans}}>{key}</td>
                               <td style={{padding:"8px 10px",color:T.accent,fontWeight:700,fontFamily:T.mono}}>{latest}%</td>
-                              <td style={{padding:"8px 10px",color:T.textMid,fontFamily:T.mono}}>{avg3}%</td>
-                              <td style={{padding:"8px 10px",color:T.textMid,fontFamily:T.mono}}>{avg6}%</td>
+                              <td className="crp-rank-col-hide" style={{padding:"8px 10px",color:T.textMid,fontFamily:T.mono}}>{avg3}%</td>
+                              <td className="crp-rank-col-hide" style={{padding:"8px 10px",color:T.textMid,fontFamily:T.mono}}>{avg6}%</td>
                               <td style={{padding:"8px 10px",color:tc,fontSize:12,fontFamily:T.mono}}>{trend}</td>
                               <td style={{padding:"8px 10px"}}>
                                 <span style={{background:parseFloat(impact)>8?T.redDim:parseFloat(impact)>5?T.amberDim:T.greenDim,color:parseFloat(impact)>8?T.red:parseFloat(impact)>5?T.amber:T.green,padding:"2px 8px",borderRadius:4,fontSize:11,fontFamily:T.mono,fontWeight:700}}>+{impact}%</span>
@@ -1734,8 +1864,9 @@ export default function CRPEngine() {
                             </tr>
                           );
                         })}
-                      </tbody>
+                        </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1746,7 +1877,7 @@ export default function CRPEngine() {
                   <div style={alertBox("b")}>
                     ℹ The KES-UF is a daily-compounded unit of account derived from KNBS sector sub-indices. Base: KES {KES_UF_BASE.toLocaleString()} (May-24). Denominating contracts in KES-UF protects purchasing power without renegotiation.
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginBottom:20}}>
+                  <div className="crp-report-uf-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8,marginBottom:20}}>
                     {Object.entries(SECTORS).map(([sid,s])=>{
                       const uf=buildUF(s.inflationKey),latest=uf[uf.length-1];
                       return (
@@ -1766,7 +1897,7 @@ export default function CRPEngine() {
                     return (
                       <div style={cardHL(secTabSec.color)}>
                         <div style={section}>{secTabSec.icon} {secTabSec.label} · KES-UF Detail</div>
-                        <div style={g3}>
+                        <div className="crp-g3" style={g3}>
                           {[["Current KES-UF",`KES ${latest?latest.uf.toFixed(2):"—"}`,secTabSec.color,"Base KES 1,000 (May-24)"],["Total Erosion",`+${latest?latest.erosion:0}%`,T.amber,"Since inception"],["Sector CPI",`${latest?latest.cpi:0}%`,T.red,`KNBS ${secTabSec.inflationKey}`]].map(([l,v,c,sub])=>(
                             <div key={l}>
                               <div style={label}>{l}</div>
@@ -1804,7 +1935,7 @@ export default function CRPEngine() {
                     </div>
                   ))}
                 </div>
-                <div style={{display:"flex",gap:12,alignItems:"flex-end",flexWrap:"wrap"}}>
+                <div className="crp-track-form" style={{display:"flex",gap:12,alignItems:"flex-end",flexWrap:"wrap"}}>
                   <div style={{flex:1,minWidth:260}}>
                     <div style={label}>Reference Code</div>
                     <input type="text" placeholder="KRP-20260422-CONS-MT-X7K9-Q3R"
@@ -1814,7 +1945,7 @@ export default function CRPEngine() {
                     <div style={{fontSize:11,color:T.textDim,marginTop:5,fontFamily:T.mono}}>Format: KRP-YYYYMMDD-SECT-DUR-XXXX-XXX</div>
                   </div>
                   <button onClick={handleTrack} disabled={trackLoading||!trackCode.trim()}
-                    style={{...btn(!!trackCode.trim(),T.accent),padding:"11px 24px",fontSize:13,fontWeight:700}}>
+                    style={{...btn(!!trackCode.trim(),T.accent),padding:"11px 24px",fontSize:13,fontWeight:700,whiteSpace:"nowrap"}}>
                     {trackLoading?"⟳ Loading…":"🔍 Retrieve Contract"}
                   </button>
                 </div>
@@ -1836,7 +1967,7 @@ export default function CRPEngine() {
                 return (
                   <div>
                     {/* Code Banner */}
-                    <div className="code-glow" style={{background:T.bg,border:`2px solid ${T.accent}`,borderRadius:12,padding:"18px 22px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+                    <div className="code-glow" style={{background:T.bg,border:`2px solid ${T.accent}`,borderRadius:12,padding:"var(--crp-card-pad,18px) 22px",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
                       <div>
                         <div style={{fontSize:10,fontWeight:700,letterSpacing:2,color:T.textDim,textTransform:"uppercase",marginBottom:4,fontFamily:T.sans}}>Reference</div>
                         <div style={{fontSize:22,fontWeight:700,color:T.accent,fontFamily:T.mono,letterSpacing:2}}>{tr.code}</div>
@@ -1868,7 +1999,7 @@ export default function CRPEngine() {
                     </div>
 
                     {/* CRP Movement + Sharpe */}
-                    <div style={g2}>
+                    <div className="crp-g2" style={g2}>
                       <div style={card({marginBottom:0})}>
                         <div style={section}>CRP Movement Since Award</div>
                         <div style={{display:"flex",gap:12,marginBottom:12}}>
@@ -1912,7 +2043,7 @@ export default function CRPEngine() {
                       <div style={{...alertBox("g"),marginBottom:16}}>
                         ⚖ Shows how this contract's monetary value has evolved since award based on current Kenya market conditions.
                       </div>
-                      <div style={g4}>
+                      <div className="crp-g4" style={g4}>
                         {[
                           {lbl:"Original BoQ",val:`KES ${fmt(tr.contractValue)}`,sub:"Agreed at award",color:T.textDim},
                           {lbl:"Original Ratio-Adjusted",val:`KES ${fmt(tr.originalAdjustedPayment)}`,sub:`CRP ${tr.originalCRP.toFixed(2)}% at award`,color:T.textMid},
@@ -1926,11 +2057,12 @@ export default function CRPEngine() {
                           </div>
                         ))}
                       </div>
-                      <table style={{width:"100%",borderCollapse:"collapse"}}>
+                      <div className="crp-table-scroll" style={{overflowX:"auto",marginTop:12}}>
+                      <table style={{width:"100%",borderCollapse:"collapse",minWidth:380}}>
                         <thead>
                           <tr style={{borderBottom:`1px solid ${T.border}`}}>
                             {["Scenario","At Award","Current","Change"].map(h=>(
-                              <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:T.textDim,textTransform:"uppercase",letterSpacing:1,fontFamily:T.sans}}>{h}</th>
+                              <th key={h} style={{padding:"8px 10px",textAlign:"left",fontSize:10,fontWeight:700,color:T.textDim,textTransform:"uppercase",letterSpacing:1,fontFamily:T.sans,whiteSpace:"nowrap"}}>{h}</th>
                             ))}
                           </tr>
                         </thead>
@@ -1950,6 +2082,7 @@ export default function CRPEngine() {
                           ))}
                         </tbody>
                       </table>
+                      </div>
                     </div>
 
                     {/* CPI Trend */}
@@ -1959,7 +2092,7 @@ export default function CRPEngine() {
                     </div>
 
                     {/* Party details */}
-                    <div style={g2}>
+                    <div className="crp-g2" style={g2}>
                       {[{title:"Obligee (Client)",data:tr.obligee,color:T.green},{title:"Obligor (Supplier)",data:tr.obligor,color:T.amber}].map(({title,data,color})=>(
                         <div key={title} style={{background:T.bg,border:`1px solid ${color}33`,borderRadius:10,padding:16}}>
                           <div style={{fontSize:13,fontWeight:700,color,marginBottom:12,fontFamily:T.sans}}>{title}</div>
