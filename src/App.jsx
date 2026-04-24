@@ -333,15 +333,16 @@ function PartyForm({title,party,color,onChange}) {
     {k:"repTitle",label:"Rep. Title",placeholder:"Procurement Director",full:false},
   ];
   return (
-    <div style={{background:T.bg,borderRadius:10,padding:18,border:`1px solid ${color}33`}}>
+    <div className="crp-party-card" style={{background:T.bg,borderRadius:10,padding:18,border:`1px solid ${color}33`}}>
       <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-        <span style={{background:`${color}22`,color,padding:"3px 10px",borderRadius:4,fontSize:10,fontWeight:700,letterSpacing:1,fontFamily:T.sans}}>{title.toUpperCase()}</span>
+        <span style={{background:`${color}22`,color,padding:"4px 12px",borderRadius:6,fontSize:11,fontWeight:700,letterSpacing:0.6,fontFamily:T.sans}}>{title.toUpperCase()}</span>
       </div>
       <div className="crp-party-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
         {fields.map(f=>(
           <div key={f.k} style={{gridColumn:f.full?"1/-1":"auto"}}>
-            <div style={{fontSize:10,fontWeight:600,letterSpacing:0.8,color:T.textDim,textTransform:"uppercase",marginBottom:5,fontFamily:T.sans}}>{f.label}</div>
+            <div className="crp-party-lbl" style={{fontSize:10,fontWeight:600,letterSpacing:0.8,color:T.textDim,textTransform:"uppercase",marginBottom:5,fontFamily:T.sans}}>{f.label}</div>
             <input
+              className="crp-party-inp"
               type="text" placeholder={f.placeholder} value={party[f.k]||""}
               onChange={e=>onChange(f.k,e.target.value)}
               style={{background:T.surface2,border:`1px solid ${T.border}`,borderRadius:6,color:T.text,padding:"8px 10px",fontSize:13,fontFamily:T.mono,outline:"none",width:"100%",boxSizing:"border-box",transition:"border-color 0.2s"}}
@@ -616,8 +617,8 @@ export default function CRPEngine() {
   ];
 
   // ─── STYLE HELPERS ────────────────────────────────────────────────────────────
-  const card     = (extra={}) => ({background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:"var(--crp-card-pad,24px)",marginBottom:20,...extra});
-  const cardHL   = (color,extra={}) => ({background:T.surface,border:`1px solid ${color}44`,borderTop:`2px solid ${color}`,borderRadius:12,padding:"var(--crp-card-pad,24px)",marginBottom:20,...extra});
+  const card     = (extra={}) => ({background:T.surface,border:`1px solid ${T.border}`,borderRadius:12,padding:"var(--crp-card-pad,24px)",marginBottom:"var(--crp-card-mb,20px)",...extra});
+  const cardHL   = (color,extra={}) => ({background:T.surface,border:`1px solid ${color}44`,borderTop:`2px solid ${color}`,borderRadius:12,padding:"var(--crp-card-pad,24px)",marginBottom:"var(--crp-card-mb,20px)",...extra});
   const label    = {fontSize:10,fontWeight:700,letterSpacing:1.5,color:T.textDim,textTransform:"uppercase",marginBottom:8,fontFamily:T.sans};
   const bigNum   = (color=T.text) => ({fontSize:36,fontWeight:700,color,fontFamily:T.mono,lineHeight:1,letterSpacing:"-0.5px"});
   const section  = {fontSize:16,fontWeight:700,color:T.text,marginBottom:16,paddingBottom:10,borderBottom:`1px solid ${T.border}`,fontFamily:T.sans,letterSpacing:"-0.2px"};
@@ -662,12 +663,13 @@ export default function CRPEngine() {
 
   return (
     <ThemeCtx.Provider value={T}>
-    <div style={{fontFamily:T.sans,background:T.bg,color:T.text,minHeight:"100vh",fontSize:14,lineHeight:1.6}}>
+    <div className="crp-app-shell" style={{fontFamily:T.sans,background:T.bg,color:T.text,minHeight:"100vh",fontSize:14,lineHeight:1.6}}>
       <link rel="preconnect" href="https://fonts.googleapis.com"/>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
       <style>{`
         *{box-sizing:border-box;-webkit-font-smoothing:antialiased;}
-        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        /* opacity-only: transform on an ancestor breaks position:sticky (configure wizard on mobile) */
+        @keyframes fadeUp{from{opacity:0}to{opacity:1}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
         @keyframes glow{0%,100%{box-shadow:0 0 0 0 ${T.accent}44}50%{box-shadow:0 0 20px 3px ${T.accent}44}}
         @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
@@ -679,16 +681,23 @@ export default function CRPEngine() {
         ::-webkit-scrollbar{width:6px;height:6px}
         ::-webkit-scrollbar-track{background:${T.bg}}
         ::-webkit-scrollbar-thumb{background:${T.border2};border-radius:3px}
-        button:hover:not(:disabled){opacity:0.88;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
-        button:active:not(:disabled){opacity:1;transform:translateY(0);box-shadow:none}
+        @media(hover:hover) and (pointer:fine){
+          button:hover:not(:disabled){opacity:0.88;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+          button:active:not(:disabled){opacity:1;transform:translateY(0);box-shadow:none}
+        }
+        @media(hover:none),(pointer:coarse){
+          button:active:not(:disabled){opacity:0.92}
+        }
         button:disabled{cursor:not-allowed;opacity:0.4}
-        input:focus,select:focus{border-color:${T.accent}!important;box-shadow:0 0 0 2px ${T.accent}22;outline:none;}
-        .sector-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.4)!important}
-        .nav-btn:hover{background:${T.surface2}!important;border-color:${T.border2}!important}
+        input:focus,select:focus,textarea:focus{border-color:${T.accent}!important;box-shadow:0 0 0 2px ${T.accent}22;outline:none;}
+        @media(hover:hover) and (pointer:fine){
+          .sector-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.4)!important}
+          .nav-btn:hover{background:${T.surface2}!important;border-color:${T.border2}!important}
+        }
         .nav-btn-active{background:${T.accentDim}!important;border-color:${T.accent}!important;color:${T.accent}!important}
         button,a[role="button"]{touch-action:manipulation}
         /* ── card padding via custom property ── */
-        :root{--crp-card-pad:24px}
+        :root{--crp-card-pad:24px;--crp-card-mb:20px}
         /* ── prevent iOS auto-zoom on focus ── */
         input,select,textarea{font-size:max(16px,1em)!important;}
         /* ── mobile topbar / sidebar drawer ── */
@@ -697,17 +706,27 @@ export default function CRPEngine() {
         .crp-page-header{display:flex}
         /* ── tablet (≤900px) ── */
         @media(max-width:900px){
-          .crp-app-grid{grid-template-columns:1fr!important}
+          .crp-app-shell{-webkit-text-size-adjust:100%;text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+          .crp-app-grid{grid-template-columns:1fr!important;max-width:100%}
+          :root{--crp-m-topbar-h:calc(56px + env(safe-area-inset-top,0px));--crp-card-pad:18px;--crp-card-mb:16px}
           .crp-mobile-topbar{
             display:flex!important;align-items:center;gap:10px;
             position:fixed;left:0;right:0;top:0;z-index:10002;
-            min-height:56px;padding:0 14px;
-            padding-top:env(safe-area-inset-top,0px);
+            box-sizing:border-box!important;
+            height:var(--crp-m-topbar-h)!important;
+            min-height:0!important;
+            padding:env(safe-area-inset-top,0px) 14px 0!important;
             border-bottom:1px solid ${T.border};
             background:${T.surface};
             box-shadow:0 2px 16px rgba(0,0,0,0.15);
           }
-          .crp-main{padding-top:calc(56px + env(safe-area-inset-top,0px) + 6px)!important;padding-left:16px!important;padding-right:16px!important;padding-bottom:max(24px,env(safe-area-inset-bottom,0px))!important}
+          .crp-main{
+            padding-top:calc(var(--crp-m-topbar-h) + 8px)!important;
+            padding-left:max(12px,env(safe-area-inset-left,0px))!important;
+            padding-right:max(12px,env(safe-area-inset-right,0px))!important;
+            padding-bottom:max(28px,env(safe-area-inset-bottom,0px))!important;
+            max-width:100%;
+          }
           .crp-page-header{display:none!important}
           .sidebar{
             position:fixed!important;left:0;top:0;
@@ -721,19 +740,26 @@ export default function CRPEngine() {
             padding-top:max(20px,env(safe-area-inset-top,0px))!important;
           }
           .sidebar.sidebar--open{transform:translate3d(0,0,0)}
+          .sidebar{padding-bottom:max(28px,env(safe-area-inset-bottom,0px))!important}
           .sidebar button{min-height:48px!important}
           .crp-nav-backdrop.crp-nav-backdrop--show{
             display:block!important;position:fixed;inset:0;z-index:10001;
             background:rgba(0,0,0,0.55);-webkit-tap-highlight-color:transparent;
           }
           .crp-toast{left:12px!important;right:12px!important;bottom:max(20px,env(safe-area-inset-bottom,0px))!important;width:auto!important}
-          :root{--crp-card-pad:18px}
           button,.crp-btn{min-height:44px}
-          .crp-cfg-stickybg{top:calc(56px + env(safe-area-inset-top,0px))!important;box-shadow:0 4px 16px rgba(0,0,0,0.32)!important;border-radius:0 0 10px 10px!important}
+          .crp-cfg-stickybg{
+            position:sticky!important;top:var(--crp-m-topbar-h)!important;
+            z-index:45!important;
+            box-shadow:0 6px 20px rgba(0,0,0,0.2)!important;
+            border-radius:0 0 12px 12px!important;
+            overflow:visible!important;
+          }
+          .fade-in > .crp-cfg-stickybg + *{margin-top:10px}
         }
         /* ── mobile (≤640px) ── */
         @media(max-width:640px){
-          :root{--crp-card-pad:14px}
+          :root{--crp-card-pad:14px;--crp-card-mb:14px}
           .crp-g2,.crp-g3,.crp-g4{grid-template-columns:1fr!important;gap:12px!important}
           .crp-party-grid{grid-template-columns:1fr!important}
           .crp-text-2col{grid-template-columns:1fr!important}
@@ -760,6 +786,17 @@ export default function CRPEngine() {
           .crp-rank-col-hide{display:none!important}
           .crp-welcome-banner{flex-direction:column!important;gap:12px!important}
           .crp-welcome-banner>div:first-child{display:none}
+          .crp-party-card{padding:14px!important;border-radius:12px!important}
+          .crp-party-card .crp-party-lbl{font-size:11px!important;margin-bottom:6px!important}
+          .crp-party-card .crp-party-inp{
+            min-height:48px!important;padding:12px 12px!important;border-radius:10px!important;
+            font-family:inherit!important;font-size:16px!important;
+          }
+          .crp-cfg-head{flex-direction:column!important;align-items:stretch!important;gap:8px!important}
+          .crp-cfg-head button{width:100%!important;justify-content:center!important}
+          .crp-analyze-metrics .crp-analyze-metric-val{font-size:18px!important;letter-spacing:-0.02em!important}
+          .crp-g2,.crp-g3,.crp-g4{margin-bottom:14px!important}
+          .crp-main select:not([multiple]){min-height:48px!important;padding-top:10px!important;padding-bottom:10px!important}
         }
         /* ── tablet only (641–900) ── */
         @media(max-width:900px) and (min-width:641px){
@@ -768,10 +805,21 @@ export default function CRPEngine() {
           .crp-cpi-tabs{flex-wrap:wrap!important}
         }
         /* ── step pills: horizontal scroll on narrow ── */
-        .crp-step-pills{display:flex;gap:5px;flex-wrap:wrap}
+        .crp-step-pills{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+        .crp-step-pills-scroll{margin:0;max-width:100%}
+        .crp-step-pills-scroll::-webkit-scrollbar{height:0}
+        .crp-step-pills-scroll::-webkit-scrollbar-thumb{background:transparent}
         @media(max-width:700px){
-          .crp-step-pills{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px;gap:6px;scrollbar-width:thin}
-          .crp-step-pills>button{flex:0 0 auto}
+          .crp-step-pills-scroll{
+            overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+            padding:2px 1px 10px;margin-bottom:2px;
+            scrollbar-width:none;-ms-overflow-style:none;
+          }
+          .crp-step-pills-scroll .crp-step-pills{
+            display:inline-flex;width:max-content;min-width:100%;
+            flex-wrap:nowrap;overflow:visible;padding-bottom:2px;gap:6px;min-height:44px
+          }
+          .crp-step-pills-scroll .crp-step-pills>button{flex:0 0 auto;white-space:nowrap}
         }
         .crp-table-scroll{-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
       `}</style>
@@ -1219,7 +1267,7 @@ export default function CRPEngine() {
                         ].map(item=>(
                           <div key={item.lbl} style={{textAlign:"center"}}>
                             <div style={label}>{item.lbl}</div>
-                            <div style={{fontSize:22,fontWeight:700,color:item.color,fontFamily:T.mono}}>{item.val}</div>
+                            <div className="crp-analyze-metric-val" style={{fontSize:22,fontWeight:700,color:item.color,fontFamily:T.mono}}>{item.val}</div>
                           </div>
                         ))}
                       </div>
@@ -1336,7 +1384,7 @@ export default function CRPEngine() {
             <div key="config" className="fade-in">
               {/* Sticky progress */}
               <div className="crp-cfg-stickybg" style={{position:"sticky",top:0,zIndex:50,background:T.surface,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 14px",marginBottom:16}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:10}}>
+                <div className="crp-cfg-head" style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:10}}>
                   <div style={{fontSize:12,color:T.textDim,fontFamily:T.sans}}>Configuration wizard</div>
                   <button type="button" onClick={()=>setConfirmDialog({id:"clearConfigure"})}
                     style={{...btn(false,T.red),borderColor:`${T.red}66`,color:T.red,background:T.redDim,padding:"8px 16px",fontSize:12,fontWeight:700}}>
@@ -1345,14 +1393,15 @@ export default function CRPEngine() {
                 </div>
                 <div className="crp-progress-summary" style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:8,marginBottom:10}}>
                   {[["Sector",cfgPrimary?SECTORS[cfgPrimary].label:"—",!!cfgPrimary],["Duration",`${Math.round(contractDays)}d`,true],["Value",contractVal?`KES ${fmt(contractVal)}`:"—",!!contractVal],["CRP",activeCRP?`${activeCRP.total.toFixed(2)}%`:"—",!!activeCRP]].map(([k,v,done])=>(
-                    <div key={k} style={{display:"flex",alignItems:"center",gap:6}}>
+                    <div key={k} style={{display:"flex",alignItems:"center",gap:6,minWidth:0}}>
                       <span style={{width:7,height:7,borderRadius:"50%",background:done?T.green:T.border,display:"block",flexShrink:0}}/>
                       <span style={{fontSize:11,color:T.textDim,fontFamily:T.sans}}>{k}:</span>
-                      <span style={{fontSize:11,fontWeight:600,color:done?T.text:T.textDim,fontFamily:T.mono,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{v}</span>
+                      <span style={{fontSize:11,fontWeight:600,color:done?T.text:T.textDim,fontFamily:T.mono,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",minWidth:0,display:"block"}}>{v}</span>
                     </div>
                   ))}
                 </div>
-                {/* Step pills */}
+                {/* Step pills — scroll wrapper keeps horizontal scrollbar off the buttons */}
+                <div className="crp-step-pills-scroll">
                 <div className="crp-step-pills">
                   {stepMeta.map(st=>{
                     const isActive=configStep===st.n;
@@ -1378,6 +1427,7 @@ export default function CRPEngine() {
                       </button>
                     );
                   })}
+                </div>
                 </div>
               </div>
 
